@@ -1,0 +1,5 @@
+*.bin
+*.eep
+*.hex
+*.elf
+Serial Monitor
