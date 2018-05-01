@@ -160,7 +160,6 @@ void loop() {
     myPID.SetMode(AUTOMATIC);
   }
 
-  //TODO Add a checkButton function that cycles throug menu setings
   checkButton();
 
   readTemp();
