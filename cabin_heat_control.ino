@@ -32,10 +32,14 @@ unsigned long windowSize = 600000; // 10 Minutes
 unsigned long windowStartTime;
 
 float tempC;
-static unsigned long lastTempRead = 0;
-static unsigned long lastAlarmCheck = 0;
+unsigned long lastTempRead = 0;
+unsigned long lastAlarmCheck = 0;
 
 bool heaterState = false;
+
+// Updated by the ISR (Interrupt Service Routine)
+volatile uint8_t virtualInt;
+volatile float virtualFloat;
 
 // Alarms for when we want heating
 uint8_t alarms[4][2];
@@ -58,7 +62,6 @@ modes mode = normal;
 
 enum menuroots {
   SpNml,
-  SpLow,
   AlwOn,
   AlwOf,
   AlNOn,
@@ -70,7 +73,8 @@ enum menuroots {
 };
 
 menuroots menuroot = SpNml;
-uint8_t menurootPos = 0;
+volatile uint8_t menurootPos = 0;
+volatile bool rootLevel = true;
 
 // Iterate over these in checkButton() or other function check hydroponics.ino
 // Use index to compare against enum values as guide for cursor positions
@@ -118,17 +122,11 @@ void setup() {
   pinMode(ROT_SW_PIN, INPUT_PULLUP);
   pinMode(TX_PIN, OUTPUT);
 
-  // Menu button settings
-  //menuButton.assign(ROT_SW_PIN);
-  //menuButton.setMode(OneShotTimer);
-  //menuButton.setTimer(1000);
-  //menuButton.turnOnPullUp();
-
+  attachInterrupt(digitalPinToInterrupt(ROT_CW_PIN), rotationInterrupt, LOW);
   Serial.begin(115200);
 
   // initialize the LCD
 	lcd.init();
-  lcd.home();
   lcd.noCursor();
   lcd.noBlink();
   lcd.backlight();
@@ -180,15 +178,208 @@ void loop() {
   refreshLCD();
 }
 
+void rotationInterrupt ()  {
+  static unsigned long lastInterruptTime = 0;
+  unsigned long interruptTime = millis();
+
+  // If interrupts come faster than 5ms, assume it's a bounce and ignore
+  if (interruptTime - lastInterruptTime > 5) {
+    if (mode != tweakmode)
+      return;
+
+    if (rootLevel) {
+      if (menuroot == LAST) {
+        menuroot = SpNml;
+        menurootPos = 0;
+
+      } else {
+        menuroot = (menuroots) menurootPos;
+        if (digitalRead(ROT_CCW_PIN) == LOW) {
+          menurootPos-- ; // Could be -5 or -10
+        } else {
+          menurootPos++;
+        }
+        menurootPos = min(9, max(0, menurootPos));
+        Serial.print("menu root pos: ");
+        Serial.println(menurootPos);
+      }
+    } else {
+      switch (menuroot) {
+        case SpNml:
+          virtualFloat = settings.setpointHigh;
+          if (digitalRead(ROT_CCW_PIN) == LOW) {
+            virtualFloat -= 0.5 ; // Could be -5 or -10
+          } else {
+            virtualFloat += 0.5;
+          }
+          settings.setpointHigh = min(30.0, max(15.0, virtualFloat));
+          break;
+
+        case AlDOn:
+          switch (alarmDayPos){
+            case 1:
+              virtualInt = settings.alarmDayIn[0];
+              break;
+            case 2:
+              virtualInt = settings.alarmDayIn[1];
+              break;
+            case 3:
+              virtualFloat = settings.setpointLow;
+              break;
+          }
+          if (digitalRead(ROT_CCW_PIN) == LOW) {
+            virtualInt--;
+            virtualFloat -= 0.5;
+          } else {
+            virtualInt++;
+            virtualFloat += 0.5;
+          }
+          switch (alarmDayPos){
+            case 1:
+              settings.alarmDayIn[0] = min(23, max(0, virtualInt));
+              alarms[2][0] = settings.alarmDayIn[0];
+              break;
+            case 2:
+              settings.alarmDayIn[1] = min(59, max(0, virtualInt));
+              alarms[2][1] = settings.alarmDayIn[1];
+              break;
+            case 3:
+              settings.setpointLow = min(30.0, max(15.0, virtualFloat));
+              break;
+          }
+          break;
+
+          case AlDOf:
+            switch (alarmDayPos){
+              case 1:
+                virtualInt = settings.alarmDayOut[0];
+                break;
+              case 2:
+                virtualInt = settings.alarmDayOut[1];
+                break;
+              case 3:
+                virtualFloat = settings.setpointLow;
+                break;
+            }
+            if (digitalRead(ROT_CCW_PIN) == LOW) {
+              virtualInt--;
+              virtualFloat -= 0.5;
+            } else {
+              virtualInt++;
+              virtualFloat += 0.5;
+            }
+            switch (alarmDayPos){
+              case 1:
+                settings.alarmDayOut[0] = min(23, max(0, virtualInt));
+                alarms[3][0] = settings.alarmDayOut[0];
+                break;
+              case 2:
+                settings.alarmDayOut[1] = min(59, max(0, virtualInt));
+                alarms[3][1] = settings.alarmDayOut[1];
+                break;
+              case 3:
+                settings.setpointLow = min(30.0, max(15.0, virtualFloat));
+                break;
+            }
+            break;
+
+        case AlNOn:
+          switch (alarmNightPos){
+            case 1:
+              virtualInt = settings.alarmNightIn[0];
+              break;
+            case 2:
+              virtualInt = settings.alarmNightIn[1];
+              break;
+          }
+          if (digitalRead(ROT_CCW_PIN) == LOW) {
+            virtualInt--;
+          } else {
+            virtualInt++;
+          }
+          switch (alarmNightPos){
+            case 1:
+              settings.alarmNightIn[0] = min(23, max(0, virtualInt));
+              alarms[0][0] = settings.alarmNightIn[0];
+              break;
+            case 2:
+              settings.alarmNightIn[1] = min(59, max(0, virtualInt));
+              alarms[0][1] = settings.alarmNightIn[1];
+              break;
+          }
+          break;
+
+        case AlNOf:
+          switch (alarmNightPos){
+            case 1:
+              virtualInt = settings.alarmNightOut[0];
+              break;
+            case 2:
+              virtualInt = settings.alarmNightOut[1];
+              break;
+          }
+          if (digitalRead(ROT_CCW_PIN) == LOW) {
+            virtualInt--;
+          } else {
+            virtualInt++;
+          }
+          switch (alarmNightPos){
+            case 1:
+              settings.alarmNightOut[0] = min(23, max(0, virtualInt));
+              alarms[1][0] = settings.alarmNightOut[0];
+              break;
+            case 2:
+              settings.alarmNightOut[1] = min(59, max(0, virtualInt));
+              alarms[1][1] = settings.alarmNightOut[1];
+              break;
+          }
+          break;
+
+        case SetTm:
+          uint8_t h;
+          uint8_t m;
+          switch (setTimePos){
+            case 1:
+              virtualInt = hour();
+              break;
+            case 2:
+              virtualInt = minute();
+              break;
+          }
+          if (digitalRead(ROT_CCW_PIN) == LOW) {
+            virtualInt--;
+          } else {
+            virtualInt++;
+          }
+          switch (setTimePos){
+            case 1:
+              h = min(23, max(0, virtualInt));
+              break;
+            case 2:
+              m = min(59, max(0, virtualInt));
+              break;
+          }
+          setTime(h, m, 0, day(), month(), year());
+          break;
+      }
+    }
+    // Keep track of when we were here last (no more than every 5ms)
+    lastInterruptTime = interruptTime;
+  }
+}
+
 void placeCursor(uint8_t (& order)[5], uint8_t & pos) {
   uint8_t coord_index = order[pos];
 
   if (coord_index == NULL){
     pos = 0;
     coord_index = order[pos];
+  }
 
+  if (pos == 0) {
+    rootLevel = true;
   } else {
-    pos++;
+    rootLevel = false;
   }
 
   uint8_t x = coordinates[coord_index][0];
@@ -200,15 +391,78 @@ void placeCursor(uint8_t (& order)[5], uint8_t & pos) {
 void checkButton() {
   // Long press while not in tweakmode enters tweakmode
   // Long press while in tweakmode saves settings.
+  static long lastLongPress = 0;
+  static uint8_t prevMode;
+
   menuButton.read();
 
-  if  (menuButton.pressedFor(1000)) {
-    static uint8_t prevMode;
+  if (mode == tweakmode && menuButton.wasReleased() && millis() - lastLongPress > 500) {
+
+    // Iterater over menu roots/items
+    Serial.println("Button On");
+    if (mode == tweakmode) {
+      // iterate over menu items
+      Serial.print("rootlevel: ");
+      Serial.println(rootLevel ? "true" : "false");
+
+      switch (menuroot) {
+        case SpNml:
+          setpointPos++;
+          Serial.print("setpointPos: ");
+          Serial.println(setpointPos);
+          break;
+
+        case AlNOn:
+        case AlNOf:
+          alarmNightPos++;
+          Serial.print("alarmNightPos: ");
+          Serial.println(alarmNightPos);
+          break;
+
+        case AlDOn:
+        case AlDOf:
+          alarmDayPos++;
+          Serial.print("alarmDayPos: ");
+          Serial.println(alarmDayPos);
+          break;
+
+        case SetTm:
+          setTimePos++;
+          Serial.print("setTimePos: ");
+          Serial.println(setTimePos);
+          break;
+
+        case AlwOn:
+          if (prevMode == allwayson){
+            mode = normal;
+          } else {
+            mode = allwayson;
+          }
+          break;
+
+        case AlwOf:
+          if (prevMode == allwaysoff){
+            mode = normal;
+          } else {
+            mode = allwaysoff;
+          }
+          break;
+
+        default:
+          break;
+      }
+    }
+  } else if (menuButton.pressedFor(1000) && millis() - lastLongPress > 1000) {
 
     // Initiate or exit tweak mode
     Serial.println("Button Hold");
     if (mode == tweakmode){
       mode = prevMode;
+      //rootLevel = true;
+      setpointPos = 0;
+      alarmNightPos = 0;
+      alarmDayPos = 0;
+      setTimePos = 0;
       lcd.noCursor();
       lcd.noBlink();
       saveSettings();
@@ -216,53 +470,16 @@ void checkButton() {
     } else {
       prevMode = mode;
       mode = tweakmode;
+      //rootLevel = true;
       lcd.setCursor(11, 1);  //M:< position of LCD
       lcd.cursor();
       lcd.blink();
     }
-
-  } else if (menuButton.wasReleased()) {
-    // Iterater over menu roots/items
-    Serial.println("Button On");
-    if (mode == tweakmode) {
-      // iterate over menu items
-      switch (menuroot) {
-        case SpNml:
-        case SpLow:
-          placeCursor(spMenuOrder, setpointPos);
-          break;
-
-        case AlNOn:
-        case AlNOf:
-          placeCursor(alarmNightMenuOrder, alarmNightPos);
-          break;
-
-        case AlDOn:
-        case AlDOf:
-          placeCursor(alarmDayMenuOrder, alarmDayPos);
-          break;
-
-        case SetTm:
-          placeCursor(setTimeMenuOrder, setTimePos);
-          break;
-
-        default:
-          break;
-      }
-    }
+    Serial.print("mode: ");
+    Serial.println(mode == tweakmode ? "tweakmode" : "normal");
+    lastLongPress = millis();
   }
 }
-
-/* Use this in rotation logic
-if (menuroot == LAST) {
-  menuroot = SpNml;
-  menurootPos = 0;
-
-} else {
-  menuroot = (menuroots) menurootPos;
-  menurootPos++;
-}
-*/
 
 void setDefaultSettings() {
   settings.magic = 42;
@@ -282,8 +499,37 @@ void setDefaultSettings() {
 }
 
 void saveSettings() {
-  EEPROM.put(0, settings);
-  Serial.println("Settings saved");
+  Settings oldSettings = EEPROM.get(0, oldSettings);
+  bool update = false;
+
+  if (oldSettings.setpointHigh != settings.setpointHigh)
+    update = true;
+  else if (oldSettings.setpointLow != settings.setpointLow)
+    update = true;
+  else if (oldSettings.alarmNightIn[0] != settings.alarmNightIn[0])
+    update = true;
+  else if (oldSettings.alarmNightIn[1] != settings.alarmNightIn[1])
+    update = true;
+  else if (oldSettings.alarmNightOut[0] != settings.alarmNightOut[0])
+    update = true;
+  else if (oldSettings.alarmNightOut[1] != settings.alarmNightOut[1])
+    update = true;
+  else if (oldSettings.alarmDayIn[0] != settings.alarmDayIn[0])
+    update = true;
+  else if (oldSettings.alarmDayIn[1] != settings.alarmDayIn[1])
+    update = true;
+  else if (oldSettings.alarmDayOut[0] != settings.alarmDayOut[0])
+    update = true;
+  else if (oldSettings.alarmDayOut[1] != settings.alarmDayOut[1])
+    update = true;
+
+  if (update) {
+    EEPROM.put(0, settings);
+    Serial.println("Settings saved");
+  } else {
+    Serial.println("No changes");
+
+  }
 }
 
 void loadSettings() {
@@ -330,8 +576,6 @@ void switchHeater(bool state) {
   // Override state depending on modes
   switch (mode) {
     case allwaysoff: state = false;
-      break;
-    case allwayson: state = true;
       break;
     case night: state = false;
       break;
@@ -439,7 +683,6 @@ void refreshLCD() {
   }
 
   if (lastStatus == 0 || now - lastStatus >= statusTimeout) {
-    lcd.home();
     lcd.setCursor(0, 0);
     printTime();
 
@@ -478,23 +721,33 @@ void refreshLCD() {
         break;
       case tweakmode:
         switch (menuroot) {
-          case SpNml: lcd.print("SpNml");
-            break;
-          case SpLow: lcd.print("SpLow");
+          case SpNml:
+            lcd.print("SpNml");
+            placeCursor(spMenuOrder, setpointPos);
             break;
           case AlwOn: lcd.print("AlwOn");
             break;
           case AlwOf: lcd.print("AlwOf");
             break;
-          case AlNOn: lcd.print("AlNOn");
+          case AlNOn:
+            lcd.print("AlNOn");
+            placeCursor(alarmNightMenuOrder, alarmNightPos);
             break;
-          case AlNOf: lcd.print("AlNOf");
+          case AlNOf:
+            lcd.print("AlNOf");
+            placeCursor(alarmNightMenuOrder, alarmNightPos);
             break;
-          case AlDOn: lcd.print("AlDOn");
+          case AlDOn:
+            lcd.print("AlDOn");
+            placeCursor(alarmDayMenuOrder, alarmDayPos);
             break;
-          case AlDOf: lcd.print("AlDOf");
+          case AlDOf:
+            lcd.print("AlDOf");
+            placeCursor(alarmDayMenuOrder, alarmDayPos);
             break;
-          case SetTm: lcd.print("SetTm");
+          case SetTm:
+            lcd.print("SetTm");
+            placeCursor(setTimeMenuOrder, setTimePos);
             break;
         }
     }
