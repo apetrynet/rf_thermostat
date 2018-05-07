@@ -3,15 +3,18 @@
 #include <PID_v1.h>
 #include "tx433_Nexa.h"
 #include <Time.h>
-#include <DS3232RTC.h>
 #include <EEPROM.h>
 #include <Button.h>   // https://github.com/JChristensen/Button
 #include <LiquidCrystal_I2C.h>
+#include <RtcDS3231.h>  // https://github.com/Makuna/Rtc
 
 #define ROT_CW_PIN 2
 #define ROT_CCW_PIN 3
 #define ROT_SW_PIN 4
 #define TX_PIN 5
+
+// RTC setup
+RtcDS3231<TwoWire> Rtc(Wire);
 
 // Create a menu button instance
 Button menuButton(ROT_SW_PIN, true, true, 25);
@@ -132,7 +135,10 @@ void setup() {
   lcd.backlight();
 
   // RTC setup
-  setSyncProvider(RTC.get);
+  Rtc.Begin();
+  Rtc.Enable32kHzPin(false);
+  Rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone);
+  //setSyncProvider(RTC.get);
 
   // Make sure relay is OFF
   Nexa.Device_Off(0);
@@ -198,7 +204,7 @@ void rotationInterrupt ()  {
         } else {
           menurootPos++;
         }
-        menurootPos = min(9, max(0, menurootPos));
+        menurootPos = min(8, max(0, menurootPos));
         Serial.print("menu root pos: ");
         Serial.println(menurootPos);
       }
@@ -337,12 +343,13 @@ void rotationInterrupt ()  {
         case SetTm:
           uint8_t h;
           uint8_t m;
+          RtcDateTime timeNow = Rtc.GetDateTime();
           switch (setTimePos){
             case 1:
-              virtualInt = hour();
+              virtualInt = timeNow.Hour();
               break;
             case 2:
-              virtualInt = minute();
+              virtualInt = timeNow.Minute();
               break;
           }
           if (digitalRead(ROT_CCW_PIN) == LOW) {
@@ -358,7 +365,15 @@ void rotationInterrupt ()  {
               m = min(59, max(0, virtualInt));
               break;
           }
-          setTime(h, m, 0, day(), month(), year());
+          RtcDateTime newTime = RtcDateTime(
+                                        timeNow.Year(),
+                                        timeNow.Month(),
+                                        timeNow.Day(),
+                                        h,
+                                        m,
+                                        0
+                                      );
+          Rtc.SetDateTime(newTime);
           break;
       }
     }
@@ -608,9 +623,10 @@ uint16_t timeToMin(uint8_t (& t)[2]) {
 
 // Check if time is within an alarm
 bool checkTimeRange(uint8_t (& in)[2], uint8_t (& out)[2]) {
+  RtcDateTime timeNow = Rtc.GetDateTime();
   uint16_t on = timeToMin(in);
   uint16_t off = timeToMin(out);
-  uint8_t n[2] = {hour(), minute()};
+  uint8_t n[2] = {timeNow.Hour(), timeNow.Minute()};
   uint16_t now = timeToMin(n);
 
   if (on < off)
@@ -656,8 +672,8 @@ void readTemp() {
   unsigned long now = millis();
 
   if (lastTempRead == 0 || now - lastTempRead >= 1000) {
-    int temp = RTC.temperature();
-    tempC = temp / 4.0;
+    RtcTemperature temp = Rtc.GetTemperature();
+    tempC = temp.AsFloatDegC();
 
     // Update PID Input
     Input = tempC;
@@ -719,6 +735,8 @@ void refreshLCD() {
       case normal: lcd.print("Norml");
         break;
       case tweakmode:
+        lcd.cursor();
+        lcd.blink();
         switch (menuroot) {
           case SpNml:
             lcd.print("SpNml");
@@ -791,11 +809,12 @@ void printTime() {
     }
   }
   // digital clock display of the time
-  printDigits(hour());
+  RtcDateTime timeNow = Rtc.GetDateTime();
+  printDigits(timeNow.Hour());
   lcd.print(":");
-  printDigits(minute());
+  printDigits(timeNow.Minute());
   lcd.print(":");
-  printDigits(second());
+  printDigits(timeNow.Second());
 }
 
 void printDigits(int digits)
