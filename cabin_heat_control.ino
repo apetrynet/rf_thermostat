@@ -192,7 +192,7 @@ void rotationInterrupt ()  {
       return;
 
     if (rootLevel) {
-      if (menurootPos >= 7) {
+      if (menurootPos > 7) {
         menuroot = SpNml;
         menurootPos = 0;
 
