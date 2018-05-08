@@ -71,8 +71,7 @@ enum menuroots {
   AlNOf,
   AlDOn,
   AlDOf,
-  SetTm,
-  LAST
+  SetTm
 };
 
 menuroots menuroot = SpNml;
@@ -193,7 +192,7 @@ void rotationInterrupt ()  {
       return;
 
     if (rootLevel) {
-      if (menuroot == LAST) {
+      if (menurootPos >= 7) {
         menuroot = SpNml;
         menurootPos = 0;
 
@@ -204,7 +203,7 @@ void rotationInterrupt ()  {
         } else {
           menurootPos++;
         }
-        menurootPos = min(8, max(0, menurootPos));
+        menurootPos = min(7, max(0, menurootPos));
         Serial.print("menu root pos: ");
         Serial.println(menurootPos);
       }
