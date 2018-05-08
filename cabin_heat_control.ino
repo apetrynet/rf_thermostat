@@ -192,9 +192,9 @@ void rotationInterrupt ()  {
       return;
 
     if (rootLevel) {
-      if (menurootPos > 7) {
+      if (menurootPos >= 8) {
         menuroot = SpNml;
-        menurootPos = 0;
+        menurootPos = 1;
 
       } else {
         menuroot = (menuroots) menurootPos;
@@ -203,7 +203,7 @@ void rotationInterrupt ()  {
         } else {
           menurootPos++;
         }
-        menurootPos = min(7, max(0, menurootPos));
+        menurootPos = min(8, max(0, menurootPos));
         Serial.print("menu root pos: ");
         Serial.println(menurootPos);
       }
