@@ -1,4 +1,4 @@
-// Hugely inspired by: https://github.com/GeorgeDewar/pid-thermostat/blob/master/thermostat/thermostat.ino
+// PI(D) logic hugely inspired by: https://github.com/GeorgeDewar/pid-thermostat/blob/master/thermostat/thermostat.ino
 #include <Wire.h>
 #include <PID_v1.h>
 #include "tx433_Nexa.h"
