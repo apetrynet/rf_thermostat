@@ -1,0 +1,326 @@
+EESchema Schematic File Version 2
+LIBS:power
+LIBS:device
+LIBS:switches
+LIBS:relays
+LIBS:motors
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+EELAYER 25 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L ATMEGA328P-PU U?
+U 1 1 5AF5EC13
+P 2600 1850
+F 0 "U?" H 1850 3100 50  0000 L BNN
+F 1 "ATMEGA328P-PU" H 3000 450 50  0000 L BNN
+F 2 "DIL28" H 2600 1850 50  0001 C CIN
+F 3 "" H 2600 1850 50  0001 C CNN
+	1    2600 1850
+	0    1    1    0   
+$EndComp
+$Comp
+L Conn_01x05 J?
+U 1 1 5AF5EC9F
+P 2850 4400
+F 0 "J?" H 2850 4700 50  0000 C CNN
+F 1 "RotaryEncoder" H 2850 4100 50  0000 C CNN
+F 2 "" H 2850 4400 50  0001 C CNN
+F 3 "" H 2850 4400 50  0001 C CNN
+	1    2850 4400
+	0    1    1    0   
+$EndComp
+$Comp
+L Conn_01x03 J?
+U 1 1 5AF5ED0E
+P 1000 4400
+F 0 "J?" H 1000 4600 50  0000 C CNN
+F 1 "RF_TX" H 1000 4200 50  0000 C CNN
+F 2 "" H 1000 4400 50  0001 C CNN
+F 3 "" H 1000 4400 50  0001 C CNN
+	1    1000 4400
+	0    1    1    0   
+$EndComp
+$Comp
+L Conn_01x06 J?
+U 1 1 5AF5ED29
+P 4000 4400
+F 0 "J?" H 4000 4700 50  0000 C CNN
+F 1 "RtcDS3231" H 4000 4000 50  0000 C CNN
+F 2 "" H 4000 4400 50  0001 C CNN
+F 3 "" H 4000 4400 50  0001 C CNN
+	1    4000 4400
+	0    1    1    0   
+$EndComp
+$Comp
+L Conn_01x04 J?
+U 1 1 5AF5ED72
+P 1950 4400
+F 0 "J?" H 1950 4600 50  0000 C CNN
+F 1 "LCD_I2C" H 1950 4100 50  0000 C CNN
+F 2 "" H 1950 4400 50  0001 C CNN
+F 3 "" H 1950 4400 50  0001 C CNN
+	1    1950 4400
+	0    1    1    0   
+$EndComp
+$Comp
+L GND #PWR?
+U 1 1 5AF5EFE9
+P 3250 4400
+F 0 "#PWR?" H 3250 4150 50  0001 C CNN
+F 1 "GND" H 3250 4250 50  0000 C CNN
+F 2 "" H 3250 4400 50  0001 C CNN
+F 3 "" H 3250 4400 50  0001 C CNN
+	1    3250 4400
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2650 3950 2650 4200
+Wire Wire Line
+	2750 3950 2750 4200
+Wire Wire Line
+	2850 3950 2850 4200
+Wire Wire Line
+	2950 4050 2950 4200
+$Comp
+L +5V #PWR?
+U 1 1 5AF5F03D
+P 2950 4050
+F 0 "#PWR?" H 2950 3900 50  0001 C CNN
+F 1 "+5V" H 2950 4190 50  0000 C CNN
+F 2 "" H 2950 4050 50  0001 C CNN
+F 3 "" H 2950 4050 50  0001 C CNN
+	1    2950 4050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3050 4200 3250 4200
+Wire Wire Line
+	3250 4200 3250 4400
+Text Label 2850 3950 3    60   ~ 0
+SW
+Text Label 2750 3950 3    60   ~ 0
+DT
+Text Label 2650 3950 3    60   ~ 0
+CLK
+$Comp
+L GND #PWR?
+U 1 1 5AF5F17E
+P 2250 4400
+F 0 "#PWR?" H 2250 4150 50  0001 C CNN
+F 1 "GND" H 2250 4250 50  0000 C CNN
+F 2 "" H 2250 4400 50  0001 C CNN
+F 3 "" H 2250 4400 50  0001 C CNN
+	1    2250 4400
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2250 4150 2250 4400
+Wire Wire Line
+	1950 4200 1950 4150
+Wire Wire Line
+	1850 4200 1850 3950
+Wire Wire Line
+	1750 4200 1750 3950
+$Comp
+L +5V #PWR?
+U 1 1 5AF5F215
+P 2050 4050
+F 0 "#PWR?" H 2050 3900 50  0001 C CNN
+F 1 "+5V" H 2050 4190 50  0000 C CNN
+F 2 "" H 2050 4050 50  0001 C CNN
+F 3 "" H 2050 4050 50  0001 C CNN
+	1    2050 4050
+	1    0    0    -1  
+$EndComp
+Text Label 1850 3950 3    60   ~ 0
+SDA
+Text Label 1750 3950 3    60   ~ 0
+SCL
+Wire Wire Line
+	1100 4200 1300 4200
+Wire Wire Line
+	1300 4200 1300 4400
+$Comp
+L GND #PWR?
+U 1 1 5AF5F2D6
+P 1300 4400
+F 0 "#PWR?" H 1300 4150 50  0001 C CNN
+F 1 "GND" H 1300 4250 50  0000 C CNN
+F 2 "" H 1300 4400 50  0001 C CNN
+F 3 "" H 1300 4400 50  0001 C CNN
+	1    1300 4400
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1000 4200 1000 4050
+Wire Wire Line
+	900  4200 900  3950
+$Comp
+L +5V #PWR?
+U 1 1 5AF5F329
+P 1000 4050
+F 0 "#PWR?" H 1000 3900 50  0001 C CNN
+F 1 "+5V" H 1000 4190 50  0000 C CNN
+F 2 "" H 1000 4050 50  0001 C CNN
+F 3 "" H 1000 4050 50  0001 C CNN
+	1    1000 4050
+	1    0    0    -1  
+$EndComp
+Text Label 900  3950 3    60   ~ 0
+RF_DATA
+Wire Wire Line
+	1950 4150 2250 4150
+Wire Wire Line
+	2050 4200 2050 4050
+Wire Wire Line
+	3700 4200 3500 4200
+Wire Wire Line
+	3900 3950 3900 4400
+$Comp
+L GND #PWR?
+U 1 1 5AF5F3FD
+P 3500 4400
+F 0 "#PWR?" H 3500 4150 50  0001 C CNN
+F 1 "GND" H 3500 4250 50  0000 C CNN
+F 2 "" H 3500 4400 50  0001 C CNN
+F 3 "" H 3500 4400 50  0001 C CNN
+	1    3500 4400
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3800 4200 3800 3950
+$Comp
+L +5V #PWR?
+U 1 1 5AF5F435
+P 3800 4050
+F 0 "#PWR?" H 3800 3900 50  0001 C CNN
+F 1 "+5V" H 3800 4190 50  0000 C CNN
+F 2 "" H 3800 4050 50  0001 C CNN
+F 3 "" H 3800 4050 50  0001 C CNN
+	1    3800 4050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4000 4200 4000 3950
+Text Label 3900 3950 3    60   ~ 0
+SDA
+Text Label 4000 3950 3    60   ~ 0
+SCL
+Wire Wire Line
+	3700 950  3700 950 
+$Comp
+L +5V #PWR?
+U 1 1 5AF5F5D7
+P 3700 950
+F 0 "#PWR?" H 3700 800 50  0001 C CNN
+F 1 "+5V" H 3700 1090 50  0000 C CNN
+F 2 "" H 3700 950 50  0001 C CNN
+F 3 "" H 3700 950 50  0001 C CNN
+	1    3700 950 
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1100 950  1500 950 
+Connection ~ 1400 950 
+$Comp
+L GND #PWR?
+U 1 1 5AF5F634
+P 1100 1150
+F 0 "#PWR?" H 1100 900 50  0001 C CNN
+F 1 "GND" H 1100 1000 50  0000 C CNN
+F 2 "" H 1100 1150 50  0001 C CNN
+F 3 "" H 1100 1150 50  0001 C CNN
+	1    1100 1150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2450 2850 2450 3250
+Wire Wire Line
+	2350 2850 2350 3250
+Text Label 2450 3250 1    60   ~ 0
+SDA
+Text Label 2350 3250 1    60   ~ 0
+SCL
+Wire Wire Line
+	1900 2850 1900 3250
+Wire Wire Line
+	1800 2850 1800 3250
+Wire Wire Line
+	1700 2850 1700 3250
+Wire Wire Line
+	1600 2850 1600 3250
+Text Label 1900 3250 1    60   ~ 0
+CW
+Text Label 1800 3250 1    60   ~ 0
+DT
+Text Label 1700 3250 1    60   ~ 0
+SW
+Text Label 1600 3250 1    60   ~ 0
+RF_DATA
+Wire Notes Line
+	700  3700 4400 3700
+Wire Notes Line
+	3400 3700 3400 4700
+Wire Notes Line
+	4400 4700 700  4700
+Wire Notes Line
+	2400 4700 2400 3700
+Wire Notes Line
+	1500 4700 1500 3700
+Wire Notes Line
+	700  700  700  4700
+Wire Notes Line
+	4400 700  4400 4700
+Wire Wire Line
+	1100 1150 1100 950 
+Wire Notes Line
+	700  700  4400 700 
+Text Notes 1100 3800 2    60   ~ 0
+RF
+Text Notes 2100 3800 2    60   ~ 0
+LCD I2C
+Text Notes 3250 3800 2    60   ~ 0
+Rotary Encoder
+Text Notes 4200 3800 2    60   ~ 0
+RTC DS3231
+Text Notes 2750 900  2    60   ~ 0
+Arduino UNO/Nano
+$EndSCHEMATC
