@@ -63,23 +63,25 @@ enum modes {
 
 modes mode = normal;
 
+// Menu categories in tweak mode
 enum menuroots {
-  SpNml,
-  AlwOn,
-  AlwOf,
-  AlNOn,
-  AlNOf,
-  AlDOn,
-  AlDOf,
-  SetTm
+  SpNml,  // Setpoint Normal
+  AlwOn,  // Always On, keep temperature at setpoint
+  AlwOf,  // Always Off, keep heater off at all times
+  AlNOn,  // Alarm Night On, when night time begins and heater is off
+  AlNOf,  // Alarm Night Off, when night time ends and heating begins
+  AlDOn,  // Alarm Day On, When daytime heating begins (lower since you're not there)
+  AlDOf,  // Alarm Day Off, When to begin heating for your return
+  SetTm   // Set Time if needed. (Recommned using own sketch for that since this feature is not completed yet)
 };
 
 menuroots menuroot = SpNml;
+
+// Variables used in menu interrupt function
 volatile uint8_t menurootPos = 0;
 volatile bool rootLevel = true;
 
-// Iterate over these in checkButton() or other function check hydroponics.ino
-// Use index to compare against enum values as guide for cursor positions
+// Cursor placement lookup
 uint8_t setpointPos = 0;
 uint8_t spMenuOrder[5] = {0, 1, NULL, NULL, NULL};
 uint8_t alarmDayPos = 0;
@@ -89,7 +91,7 @@ uint8_t alarmNightMenuOrder[5] = {0, 2, 3, NULL, NULL};
 uint8_t setTimePos = 0;
 uint8_t setTimeMenuOrder[5] = {0, 2, 3, NULL, NULL};
 
-// LCD coordinates
+// LCD Cursor coordinates referred to with the lookup above
 const uint8_t coordinates[4][2] = {
   {11, 1},  // M:<
   {3, 1},   // Sp:<
@@ -97,7 +99,7 @@ const uint8_t coordinates[4][2] = {
   {3, 0}    // >MM
 };
 
-// Settings
+// Settings struct for storing in EEPROM
 struct Settings {
   uint8_t magic;
   float setpointHigh;
@@ -137,7 +139,6 @@ void setup() {
   Rtc.Begin();
   Rtc.Enable32kHzPin(false);
   Rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone);
-  //setSyncProvider(RTC.get);
 
   // Make sure relay is OFF
   Nexa.Device_Off(0);
@@ -182,6 +183,7 @@ void loop() {
   refreshLCD();
 }
 
+// Interrupt function to handle menu changes and setting of values
 void rotationInterrupt ()  {
   static unsigned long lastInterruptTime = 0;
   unsigned long interruptTime = millis();
@@ -381,6 +383,7 @@ void rotationInterrupt ()  {
   }
 }
 
+// Place cursor on LCD to indicate current value to change. (Need work..)
 void placeCursor(uint8_t (& order)[5], uint8_t & pos) {
   uint8_t coord_index = order[pos];
 
@@ -401,9 +404,12 @@ void placeCursor(uint8_t (& order)[5], uint8_t & pos) {
   lcd.setCursor(x, y);
 }
 
+// Check if button is pressed and tak action accordingly
 void checkButton() {
   // Long press while not in tweakmode enters tweakmode
   // Long press while in tweakmode saves settings.
+  // Short press while in tweakmode iterates over values to change
+
   static long lastLongPress = 0;
   static uint8_t prevMode;
 
@@ -494,6 +500,7 @@ void checkButton() {
   }
 }
 
+// A set of default values to start with if nothing is found in EEPROM
 void setDefaultSettings() {
   settings.magic = 42;
   settings.setpointHigh = 24.5;
@@ -511,6 +518,7 @@ void setDefaultSettings() {
   Serial.println("Default settings applied");
 }
 
+// Save settings to EEPROM if needed
 void saveSettings() {
   Settings oldSettings = EEPROM.get(0, oldSettings);
   bool update = false;
@@ -545,6 +553,7 @@ void saveSettings() {
   }
 }
 
+// Load and apply settings from EEPROM if found
 void loadSettings() {
   EEPROM.get(0, settings);
 
@@ -567,6 +576,7 @@ void loadSettings() {
   }
 }
 
+// Determin if heater should be on or off depending on PID output
 void adjustHeater() {
   unsigned long now = millis();
 
@@ -585,6 +595,7 @@ void adjustHeater() {
   }
 }
 
+// Switch on/off heater according to mode and PID output
 void switchHeater(bool state) {
   // Override state depending on modes
   switch (mode) {
@@ -614,13 +625,14 @@ void switchHeater(bool state) {
   }
 }
 
+// Convert alarm time array {HH, MM} to minutes for easier comparison
 uint16_t timeToMin(uint8_t (& t)[2]) {
   uint16_t hours_as_minutes = t[0] * 60;
 
   return uint16_t(t[1] + hours_as_minutes);
 }
 
-// Check if time is within an alarm
+// Check if time is within an alarm's in and out point
 bool checkTimeRange(uint8_t (& in)[2], uint8_t (& out)[2]) {
   RtcDateTime timeNow = Rtc.GetDateTime();
   uint16_t on = timeToMin(in);
@@ -647,6 +659,7 @@ bool checkTimeRange(uint8_t (& in)[2], uint8_t (& out)[2]) {
         return false;
 }
 
+// Check if we should change mode due to an alarm
 void checkAlarms() {
   unsigned long now = millis();
 
@@ -667,6 +680,7 @@ void checkAlarms() {
   }
 }
 
+// Read temperature from RTC module and feed it to the PID
 void readTemp() {
   unsigned long now = millis();
 
@@ -682,6 +696,7 @@ void readTemp() {
   }
 }
 
+// Draw information on the LCD
 void refreshLCD() {
   static unsigned long lastStatus = 0;
   static uint16_t statusTimeout = 1000;
@@ -696,7 +711,8 @@ void refreshLCD() {
     statusTimeout = 1000;
   }
 
-  if (lastStatus == 0 || now - lastStatus >= statusTimeout) {
+  //if (lastStatus == 0 || now - lastStatus >= statusTimeout) {
+  if (true) {
     lcd.setCursor(0, 0);
     printTime();
 
@@ -771,6 +787,7 @@ void refreshLCD() {
   }
 }
 
+// Format the time to represent now or an alarm in tweakmode
 void printTime() {
   if (mode == tweakmode) {
     switch (menuroot){
@@ -816,6 +833,7 @@ void printTime() {
   printDigits(timeNow.Second());
 }
 
+// Make sure we always have two digits in the time representation
 void printDigits(int digits)
 {
   if(digits < 10)
