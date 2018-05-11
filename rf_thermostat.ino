@@ -72,7 +72,7 @@ enum menuroots {
   AlNOf,  // Alarm Night Off, when night time ends and heating begins
   AlDOn,  // Alarm Day On, When daytime heating begins (lower since you're not there)
   AlDOf,  // Alarm Day Off, When to begin heating for your return
-  SetTm   // Set Time if needed. (Recommned using own sketch for that since this feature is not completed yet)
+  SetTm   // Set Time if needed.
 };
 
 menuroots menuroot = SpNml;
@@ -80,6 +80,10 @@ menuroots menuroot = SpNml;
 // Variables used in menu interrupt function
 volatile uint8_t menurootPos = 0;
 volatile bool rootLevel = true;
+volatile uint8_t h = 0;
+volatile uint8_t m = 0;
+volatile uint8_t s = 0;
+
 
 // Cursor placement lookup
 uint8_t setpointPos = 0;
@@ -137,6 +141,42 @@ void setup() {
 
   // RTC setup
   Rtc.Begin();
+  RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
+  if (!Rtc.IsDateTimeValid()) {
+      // Common Cuases:
+      //    1) first time you ran and the device wasn't running yet
+      //    2) the battery on the device is low or even missing
+
+      Serial.println("RTC lost confidence in the DateTime!");
+
+      // following line sets the RTC to the date & time this sketch was compiled
+      // it will also reset the valid flag internally unless the Rtc device is
+      // having an issue
+
+      Rtc.SetDateTime(compiled);
+  }
+
+  if (!Rtc.GetIsRunning())
+  {
+      Serial.println("RTC was not actively running, starting now");
+      Rtc.SetIsRunning(true);
+  }
+
+  RtcDateTime now = Rtc.GetDateTime();
+  if (now < compiled)
+  {
+      Serial.println("RTC is older than compile time!  (Updating DateTime)");
+      Rtc.SetDateTime(compiled);
+  }
+  else if (now > compiled)
+  {
+      Serial.println("RTC is newer than compile time. (this is expected)");
+  }
+  else if (now == compiled)
+  {
+      Serial.println("RTC is the same as compile time! (not expected but all is fine)");
+  }
+    
   Rtc.Enable32kHzPin(false);
   Rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone);
 
@@ -342,15 +382,12 @@ void rotationInterrupt ()  {
           break;
 
         case SetTm:
-          uint8_t h;
-          uint8_t m;
-          RtcDateTime timeNow = Rtc.GetDateTime();
           switch (setTimePos){
             case 1:
-              virtualInt = timeNow.Hour();
+              virtualInt = h > 0 ? h : 0;
               break;
             case 2:
-              virtualInt = timeNow.Minute();
+              virtualInt = m > 0 ? m : 0;
               break;
           }
           if (digitalRead(ROT_CCW_PIN) == LOW) {
@@ -366,15 +403,7 @@ void rotationInterrupt ()  {
               m = min(59, max(0, virtualInt));
               break;
           }
-          RtcDateTime newTime = RtcDateTime(
-                                        timeNow.Year(),
-                                        timeNow.Month(),
-                                        timeNow.Day(),
-                                        h,
-                                        m,
-                                        0
-                                      );
-          Rtc.SetDateTime(newTime);
+          s = 0;
           break;
       }
     }
@@ -484,6 +513,21 @@ void checkButton() {
       setTimePos = 0;
       lcd.noCursor();
       lcd.noBlink();
+
+      // Set Time if last menu was SetTm
+      if (menuroot == SetTm) {
+        RtcDateTime timeNow = Rtc.GetDateTime();
+        RtcDateTime newTime = RtcDateTime(
+                                      timeNow.Year(),
+                                      timeNow.Month(),
+                                      timeNow.Day(),
+                                      h,
+                                      m,
+                                      s
+                                    );
+        Rtc.SetDateTime(newTime);
+      }
+      // Save updated settings to EEPROM
       saveSettings();
 
     } else {
@@ -821,6 +865,14 @@ void printTime() {
         printDigits(settings.alarmDayOut[1]);
         lcd.print(":");
         printDigits(0);
+        return;
+
+      case SetTm:
+        printDigits(h);
+        lcd.print(":");
+        printDigits(m);
+        lcd.print(":");
+        printDigits(s);
         return;
     }
   }
